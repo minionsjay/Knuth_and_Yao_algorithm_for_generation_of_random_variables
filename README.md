@@ -5,3 +5,5 @@ This a C++ implementation of an algorithm from Knuth and Yao published in 1976 o
 The code only uses the standard library. Some binary files describing a few examples from the PDF file can be downloaded from here too.
 
 Please refer to the PDF "ky_algo.pdf" for more information and references.
+
+The code uses NTL ( https://www.shoup.net/ntl/ ) to compute p-bit accurate probability values.
