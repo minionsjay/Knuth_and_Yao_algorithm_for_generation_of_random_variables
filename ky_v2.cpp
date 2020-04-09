@@ -1,12 +1,12 @@
-//#include <iomanip>
+#include <iomanip>
 #include <iostream>
 //#include <fstream>
 #include <random>
 #include <ctime>
 #include <chrono>
-//#include <cstdlib>
+#include <cstdlib>
 #include <bitset>
-//#include <cstring>
+#include <cstring>
 //#include <cassert>
 //#include <unordered_map>
 
@@ -335,6 +335,7 @@ void gen_rnd_var(long & index_rv, struct prob_dist_data T)
 */
 
 #include "prob_dist_list.h" 
+#include "ky_v2_IO.h"
 
 int main(void)
 {
@@ -348,8 +349,10 @@ int main(void)
   struct prob_dist_data P;
 
   //See prob_dis_list.h for descriptions
-  which_prob_dist(1,P);
+  //which_prob_dist(1,P);
 
+  query_user(P);
+  
   get_bin_rep(P);
 
   /*
@@ -363,17 +366,28 @@ int main(void)
       std::cout << "\nP{outcome = "<<rv<<"} = " << P.pmv[rv] << "\n";
     }
   
-  long nb_df;//degrees of freedom resulting from chi sqaure test
+  long nb_df;//degrees of freedom resulting from chi square test
   NTL::RR stat_test_value;
 
   /*
     Make it big enough to make sure the implementation is checked properly. 
     The chi sqaure groups classes if the observed frequence < 10, and hence
     resulting in a decrease of the number of degrees of freedom.
-    The number of classes is set to 25 if the size of the support exceeds 25,
-    but can be changed. 
+    The number of classes is set to 25, that it splits number of possible outcomes 
+    into 25 classes.
   */
-  long sample_size=P.nb_atoms*5;
+  long sample_size;
+  if(P.nb_atoms < 25*10)
+    {
+      sample_size = 250;
+    }
+  else
+    {
+      sample_size=P.nb_atoms*10;
+    }
+  
+  chi2_goodness_of_fit(P, sample_size, nb_df, stat_test_value);
+
   std::cout << "\n\nnumber of atoms = " << P.nb_atoms;
   
   NTL::RR bin_ent;
@@ -384,11 +398,9 @@ int main(void)
   
   std::cout.flush();
   
-  chi2_goodness_of_fit(P, sample_size, nb_df, stat_test_value);
-  
   std::cout << "\naverage number of random bits used per random variable = " << (double)ct_rnd_bit/(double)sample_size;
   std::cout << " (compare with entropy)";
-  std::cout << "\n\ngoodness of fit chi2 stat (" << nb_df << " d.f.) = " << stat_test_value << "\n\n" ;
+  std::cout << "\ngoodness of fit chi2 stat (" << nb_df << " d.f.) = " << stat_test_value << "\n\n" ;
     
   return 0;
 }

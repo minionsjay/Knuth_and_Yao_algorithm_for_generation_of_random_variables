@@ -140,7 +140,7 @@ void which_prob_dist(int case_nb, struct prob_dist_data & T)
 	  thetasum+=theta[i];
 	}
       thetasum = NTL::RR(0.5)*thetasum;
-      std::cout << "theta = " << thetasum/PI << "\n";
+      //std::cout << "theta = " << thetasum/PI << "\n";
       //thetasum = NTL::RR(0.25)*PI;//entropy is 12=n
       bool tmp;
       for(long a = 0;a<(1L<<n);a++)
@@ -293,7 +293,7 @@ void chi2_goodness_of_fit(struct prob_dist_data T, long sample_size, long & nb_d
       gen_rnd_var(index_rv, T);
       auto t_end = std::chrono::high_resolution_clock::now();
       time_difference = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-      std::cout << i << " / " << sample_size << " : " << T.pmv[index_rv] << "\n";
+      std::cout << i << " / " << sample_size << " : " << T.pmv[index_rv] << " (generating sample for chisquare goodness-of-fit test)\n";
       //std::cout << index_rv << " " << T.remap_outcomes[index_rv] << " " << T.pmv[index_rv] << "\n\n##########################################\n";
       for(long c = 0; c < nb_classes-1; c++)
 	{
