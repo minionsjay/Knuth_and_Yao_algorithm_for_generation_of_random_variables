@@ -257,7 +257,7 @@ void which_prob_dist(int case_nb, struct prob_dist_data & T)
 
 /**** ***** ***** ***** ***** **** ***** ***** ***** *****/
 
-void chi2_goodness_of_fit(struct prob_dist_data T, long sample_size, long & nb_df, NTL::RR & stat)
+void chi2_goodness_of_fit(struct prob_dist_data T, long & sample_size, long & nb_df, NTL::RR & stat)
 {
   // To test is the descriptions above are correctly implemented. The sampling algorithm is agnostic
   //  to weather or not the description in an prob_dist_data is correct.
@@ -266,6 +266,19 @@ void chi2_goodness_of_fit(struct prob_dist_data T, long sample_size, long & nb_d
   
   if(sample_size<T.nb_atoms){std::cerr << "Sample size too small for the size of the support of the distribution. --- Exit."; exit(-1);}
 
+  //get minimum probality
+  NTL::RR minp = NTL::RR(1.0);
+  for(long i = 0 ; i < T.nb_atoms; i++)
+    {
+      if(T.pmv[i]<minp)
+	{
+	  minp=T.pmv[i];
+	}
+    }
+  
+  long l = NTL::conv<long>(NTL::ceil(-NTL::log(minp)));
+  sample_size = T.nb_atoms*l;
+  
   long nb_classes;
   if(T.nb_atoms<=25)
     {

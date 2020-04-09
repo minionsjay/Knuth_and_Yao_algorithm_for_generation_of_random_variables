@@ -1,17 +1,23 @@
 #include <iomanip>
 #include <iostream>
-//#include <fstream>
+#include <fstream>
 #include <random>
 #include <ctime>
 #include <chrono>
 #include <cstdlib>
 #include <bitset>
 #include <cstring>
-//#include <cassert>
+#include <cassert>
 //#include <unordered_map>
+#include <bitset>
 
+//#include <NTL/vector.h>
+//#include <NTL/matrix.h>
+//#include <NTL/quad_float.h>
 #include <NTL/ZZ.h>
 #include <NTL/RR.h>
+//#include <NTL/vec_vec_ZZ.h>
+//#include <NTL/BasicThreadPool.h>
 
 /**** ***** ***** ***** ***** **** ***** ***** ***** *****/
 
@@ -50,7 +56,7 @@ std::bernoulli_distribution distBer(0.5);
   min_accuracy is passed as an argument to NTL::RR::SetPrecision
 */
 
-const long min_accuracy = 1000;//ok this is a bit overkilling perhaps
+const long min_accuracy = 1000;
 
 const long max_number_of_coefficients=(1UL<<15);
 
@@ -171,6 +177,93 @@ void entropy(NTL::RR & binary_entropy, struct prob_dist_data P)
   binary_entropy = r;
 }
 
+/**** ***** ***** ***** ***** **** ***** ***** ***** *****/
+ /*
+void write_bin_rep_to_file(std::string fname, struct prob_dist_dat T)
+{
+  if(fname.empty()){std::cerr << "problem --- exit\n"; exit(-1);}
+
+  std::ofstream file_res(fname, std::ofstream::out | std::ofstream::binary);
+  assert((file_res));
+
+  file_res.write((char *)(&T.nb_atoms),sizeof(long));
+  file_res.write((char *)(&T.min_accuracy),sizeof(long));
+  file_res.write((char *)(&T.max_size_storage_bin_rep),sizeof(long));
+  
+  for(long i=0;i<T.nb_atoms;i++)
+    {
+      file_res.write((char *)(T.brt[i]),T.max_size_storage_bin_rep/8);
+    }
+  file_res.close();
+}
+ */
+/**** ***** ***** ***** ***** **** ***** ***** ***** *****/
+
+  /*
+void read_bin_rep_from_file(std::string fname, struct prob_dist_basic_dat * T)
+{
+  if(fname.empty()){std::cerr << "problem --- exit\n"; exit(-1);}
+ 
+  std::ifstream file_res(fname, std::ifstream::in | std::ifstream::binary);
+  assert((file_res));
+  
+  file_res.read((char *)(&T->nb_atoms),sizeof(long));
+  file_res.read((char *)(&T->min_accuracy),sizeof(long));
+  file_res.read((char *)(&T->max_size_storage_bin_rep),sizeof(long));
+  T->brt = new bool * [T->nb_atoms];
+  
+  for(long i=0;i<T->nb_atoms;i++)
+    {
+      T->brt[i] = new bool [T->max_size_storage_bin_rep];
+      file_res.read((char *)((T->brt[i])),(T->max_size_storage_bin_rep/8));
+    }
+  file_res.close();
+
+ 
+ 
+  //brt[r][c] , c represents level (c+1) for 0<=c<min_accuracy, (columns for max_size_storage_bin_rep> c >= min_accuracy are not used, and hopefully no one needs more then max_size_storage_bin_rep)
+  
+  T->nb_exit_nodes = new long [T->min_accuracy];
+  bzero(T->nb_exit_nodes,(T->min_accuracy)*sizeof(long));
+  for(long l=0;l<T->min_accuracy;l++)
+    {
+      for(long i = 0; i<T->nb_atoms;i++)
+	{
+	  T->nb_exit_nodes[l]=T->nb_exit_nodes[l]+T->brt[i][l];
+	}
+    }
+
+ 
+  
+  T->nb_nodes = new long [T->min_accuracy];
+  bzero(T->nb_nodes,(T->min_accuracy)*sizeof(long));
+ 
+  T->nb_nodes[0]=2;//(there are always 2 nodes for the 1st level indexed by (1 - 1) )
+  for(long l=1;l<T->min_accuracy;l++)
+    {
+      //T->nb_nodes[l-1]=(1L<<l);//maximum possibles of nodes at level l indexed by (l-1) + 1, 
+      long tmp = 0;
+      for(long m=0;m<l;m++)//account of previous level
+	{
+	  //T->nb_nodes[l-1]=T->nb_nodes[l-1] - ( (1L<<(l-m))*(T->nb_exit_nodes[l-m-1]) );
+	  tmp = tmp + (1L<<(l-m))*(T->nb_exit_nodes[m]);
+	}
+      T->nb_nodes[l]=(1L<<(l+1))-tmp;
+    }
+
+  T->p2_val_nb_nodes = new long [T->min_accuracy];
+  bzero(T->p2_val_nb_nodes,(T->min_accuracy)*sizeof(long));
+
+  for(long l=0;l<T->min_accuracy;l++)
+    {
+      T->p2_val_nb_nodes[l]=(long)std::ceil(std::log2(T->nb_nodes[l]));
+    }
+  
+}
+  */
+
+/**** ***** ***** ***** ***** **** ***** ***** ***** *****/
+  
 void get_bin_rep(struct prob_dist_data & T)
 {
   /*
@@ -201,8 +294,8 @@ void get_bin_rep(struct prob_dist_data & T)
 
       std::bitset<max_number_of_coefficients> v;
       //no need to init. by default bitset field is all 0
-      //A quick easy way to initialize is v = v^v;
-      v = v^v;
+      //a quick to initialize though could v = v^v;
+      v = v^v;//Is it needed?
       
       NTL::ZZ mm = T.pmv[ct_atoms].mantissa();
       long ee = T.pmv[ct_atoms].exponent();
@@ -335,7 +428,6 @@ void gen_rnd_var(long & index_rv, struct prob_dist_data T)
 */
 
 #include "prob_dist_list.h" 
-#include "ky_v2_IO.h"
 
 int main(void)
 {
@@ -344,47 +436,80 @@ int main(void)
   std::cout.setf( std::ios::fixed, std::ios::floatfield );
 
   NTL::RR::SetPrecision(min_accuracy);
-  NTL::RR::SetOutputPrecision(15);
+  NTL::RR::SetOutputPrecision(20);
 
   struct prob_dist_data P;
 
-  //See prob_dis_list.h for descriptions
-  //which_prob_dist(1,P);
+  which_prob_dist(1,P);
 
-  query_user(P);
-  
   get_bin_rep(P);
 
   /*
     Example of a call:
+  long rv;
+  gen_rnd_var(rv,P);
+
+  std::cout << "\nP{outcome = "<<rv<<"} = " << P.pmv[rv] << "\n";
   */
-  if(false)
+  
+ 
+  if(true)
     {
-      long rv;
-      gen_rnd_var(rv,P);
+      long nb_df;
+      NTL::RR stat_test_value;
+      long sample_size=P.nb_atoms*10;
+      std::cout << "\n\nnumber of atoms = " << P.nb_atoms;
       
-      std::cout << "\nP{outcome = "<<rv<<"} = " << P.pmv[rv] << "\n";
+      NTL::RR bin_ent;
+      entropy(bin_ent,P);
+      std::cout << "\nentropy = " << bin_ent;
+    
+      std::cout << "\n\nsample size = " << sample_size;
+      
+      std::cout.flush();
+
+      chi2_goodness_of_fit(P, sample_size, nb_df, stat_test_value);
+
+      std::cout << "\naverage number of random bits used per random variable = " << (double)ct_rnd_bit/(double)sample_size;
+      std::cout << " (compare with entropy)";
+      std::cout << "\n\ngoodness of fit chi2 stat (" << nb_df << " d.f.) = " << stat_test_value << "\n\n" ;
+      
     }
-
-  long sample_size;//for chi2 goodness-of-fit test,
-  long nb_df;//degrees of freedom resulting from chi square test
-  NTL::RR stat_test_value;
-
-  chi2_goodness_of_fit(P, sample_size, nb_df, stat_test_value);
-
-  std::cout << "\n\nnumber of atoms = " << P.nb_atoms;
+  /****************************************/
   
-  NTL::RR bin_ent;
-  entropy(bin_ent,P);
-  std::cout << "\nentropy = " << bin_ent;
+  std::string filename;
+  //write_bin_rep_to_file(filename,T); 
+  /*
+  std::cout << "Enter file name: ";
+  getline(std::cin , filename);
+  if(!filename.empty())
+    {
+      write_bin_rep_to_file(filename,T);     
+    }
+  else
+    {
+      std::cerr << "empty file name --- exit\n\n";
+      exit(-1);
+    }
+  */
   
-  std::cout << "\n\nsample size = " << sample_size;
+  /****************************************/
   
-  std::cout.flush();
-  
-  std::cout << "\naverage number of random bits used per random variable = " << (double)ct_rnd_bit/(double)sample_size;
-  std::cout << " (compare with entropy)";
-  std::cout << "\ngoodness of fit chi2 stat (" << nb_df << " d.f.) = " << stat_test_value << "\n\n" ;
+ 
+  /****************************************/
+  /*
+  for(long i = 0; i<T.nb_atoms;i++)
+    {
+      delete [] T.brt[i];
+    }
+  delete [] T.brt;
+  delete [] T.pmv;
+  delete [] T.remap_outcomes;
+  delete [] T.nb_nodes;
+  delete [] T.nb_exit_nodes;
+  delete [] T.p2_val_nb_nodes;
+  */
+  /****************************************/
     
   return 0;
 }
